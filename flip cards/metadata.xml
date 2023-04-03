@@ -108,6 +108,8 @@ Eden and Tainted Eden get this ability by default.
 
 Tap the drop button to flip cards. If you have more than one pocket item then you'll need to hold the map button down before tapping the drop button (so you don't switch between slots).
 
+If you're playing as The Forgotton then you'll always need to use the map + drop keys.
+
 I added support for:
 [list]
     [*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=2848704602]Reverse Wheel of Fortune Rework[/url]
@@ -115,7 +117,7 @@ I added support for:
 [/list]
 
 Shout out to [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2023409823]Reversed Tarot Mod[/url] which did something similar for AB+.</description>
-    <version>1.1</version>
+    <version>1.2</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Cards"/>

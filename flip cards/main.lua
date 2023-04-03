@@ -100,7 +100,7 @@ function mod:onRender()
     
     if (Input.IsActionTriggered(ButtonAction.ACTION_DROP, player.ControllerIndex) or mod.isDropButtonTriggered) and
        mod:playerHasRequirements(player) and
-       (Input.IsActionPressed(ButtonAction.ACTION_MAP, player.ControllerIndex) or mod:playerCountPocketItems(player) == 1) and
+       (Input.IsActionPressed(ButtonAction.ACTION_MAP, player.ControllerIndex) or (mod:playerCountPocketItems(player) == 1 and not mod:playerIsTheForgotten(player))) and
        card == mod.playerCards[playerHash] -- don't flip immediately when switching slots
     then
       mod:playerFlipCard(player)
@@ -190,6 +190,15 @@ function mod:playerCountPocketItems(player)
   end
   
   return count
+end
+
+function mod:playerIsTheForgotten(player)
+  local playerType = player:GetPlayerType()
+  local subPlayer = player:GetSubPlayer()
+  local subPlayerType = subPlayer and subPlayer:GetPlayerType()
+  
+  return (playerType == PlayerType.PLAYER_THEFORGOTTEN and subPlayerType == PlayerType.PLAYER_THESOUL) or
+         (playerType == PlayerType.PLAYER_THESOUL and subPlayerType == PlayerType.PLAYER_THEFORGOTTEN)
 end
 
 function mod:addModdedCards()
