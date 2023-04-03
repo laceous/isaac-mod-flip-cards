@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+    <name>Flip Cards</name>
+    <directory>flip cards</directory>
+    <id>2956957341</id>
+    <description>If Isaac acquires any of the following card-related items, he'll gain the ability to flip tarot cards over.
+[list]
+    [*]Ace of Spades
+    [*]Blank Card
+    [*]Booster Pack
+    [*]Deck of Cards
+    [*]Starter Deck
+    [*]Tarot Cloth
+[/list]
+
+Eden and Tainted Eden get this ability by default.
+
+[table]
+    [tr]
+        [td]0[/td]
+        [td]The Fool &lt;-&gt; The Fool?[/td]
+    [/tr]
+    [tr]
+        [td]I[/td]
+        [td]The Magician &lt;-&gt; The Magician?[/td]
+    [/tr]
+    [tr]
+        [td]II[/td]
+        [td]The High Priestess &lt;-&gt; The High Priestess?[/td]
+    [/tr]
+    [tr]
+        [td]III[/td]
+        [td]The Empress &lt;-&gt; The Empress?[/td]
+    [/tr]
+    [tr]
+        [td]IV[/td]
+        [td]The Emperor &lt;-&gt; The Emperor?[/td]
+    [/tr]
+    [tr]
+        [td]V[/td]
+        [td]The Hierophant &lt;-&gt; The Hierophant?[/td]
+    [/tr]
+    [tr]
+        [td]VI[/td]
+        [td]The Lovers &lt;-&gt; The Lovers?[/td]
+    [/tr]
+    [tr]
+        [td]VII[/td]
+        [td]The Chariot &lt;-&gt; The Chariot?[/td]
+    [/tr]
+    [tr]
+        [td]VIII[/td]
+        [td]Justice &lt;-&gt; Justice?[/td]
+    [/tr]
+    [tr]
+        [td]IX[/td]
+        [td]The Hermit &lt;-&gt; The Hermit?[/td]
+    [/tr]
+    [tr]
+        [td]X[/td]
+        [td]Wheel of Fortune &lt;-&gt; Wheel of Fortune?[/td]
+    [/tr]
+    [tr]
+        [td]XI[/td]
+        [td]Strength &lt;-&gt; Strength?[/td]
+    [/tr]
+    [tr]
+        [td]XII[/td]
+        [td]The Hanged Man &lt;-&gt; The Hanged Man?[/td]
+    [/tr]
+    [tr]
+        [td]XIII[/td]
+        [td]Death &lt;-&gt; Death?[/td]
+    [/tr]
+    [tr]
+        [td]XIV[/td]
+        [td]Temperance &lt;-&gt; Temperance?[/td]
+    [/tr]
+    [tr]
+        [td]XV[/td]
+        [td]The Devil &lt;-&gt; The Devil?[/td]
+    [/tr]
+    [tr]
+        [td]XVI[/td]
+        [td]The Tower &lt;-&gt; The Tower?[/td]
+    [/tr]
+    [tr]
+        [td]XVII[/td]
+        [td]The Stars &lt;-&gt; The Stars?[/td]
+    [/tr]
+    [tr]
+        [td]XVIII[/td]
+        [td]The Moon &lt;-&gt; The Moon?[/td]
+    [/tr]
+    [tr]
+        [td]XIX[/td]
+        [td]The Sun &lt;-&gt; The Sun?[/td]
+    [/tr]
+    [tr]
+        [td]XX[/td]
+        [td]Judgement &lt;-&gt; Judgement?[/td]
+    [/tr]
+    [tr]
+        [td]XXI[/td]
+        [td]The World &lt;-&gt; The World?[/td]
+    [/tr]
+[/table]
+
+Tap the drop button to flip cards. If you have more than one pocket item then you'll need to hold the map button down before tapping the drop button (so you don't switch between slots).
+
+I added support for:
+[list]
+    [*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=2848704602]Reverse Wheel of Fortune Rework[/url]
+    [*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=2841722807]Eye of Night Cards[/url]
+[/list]
+
+Shout out to [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2023409823]Reversed Tarot Mod[/url] which did something similar for AB+.</description>
+    <version>1.1</version>
+    <visibility>Public</visibility>
+    <tag id="Lua"/>
+    <tag id="Cards"/>
+    <tag id="Tweaks"/>
+</metadata>
