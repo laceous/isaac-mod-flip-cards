@@ -74,7 +74,6 @@ mod.flipCards = {
   [Card.CARD_REVERSE_WORLD]            = Card.CARD_WORLD,
 }
 
-mod.isDropButtonTriggered = false
 mod.playerCards = {}
 
 function mod:onGameStart()
@@ -83,7 +82,6 @@ function mod:onGameStart()
 end
 
 function mod:onGameExit()
-  mod.isDropButtonTriggered = false
   mod:clearPlayerCards()
 end
 
@@ -96,9 +94,8 @@ function mod:onRender()
     local player = game:GetPlayer(i)
     local playerHash = GetPtrHash(player)
     local _, card = mod:playerGetFlipAndCard(player, 0)
-    mod.isDropButtonTriggered = false
     
-    if (Input.IsActionTriggered(ButtonAction.ACTION_DROP, player.ControllerIndex) or mod.isDropButtonTriggered) and
+    if Input.IsActionTriggered(ButtonAction.ACTION_DROP, player.ControllerIndex) and
        mod:playerHasRequirements(player) and
        (Input.IsActionPressed(ButtonAction.ACTION_MAP, player.ControllerIndex) or (mod:playerCountPocketItems(player) == 1 and not mod:playerIsTheForgotten(player))) and
        card == mod.playerCards[playerHash] -- don't flip immediately when switching slots
@@ -120,7 +117,6 @@ function mod:onInputAction(entity, inputHook, buttonAction)
        mod:playerGetFlipAndCard(player, 0) and
        Input.IsActionPressed(ButtonAction.ACTION_MAP, player.ControllerIndex)
     then
-      mod.isDropButtonTriggered = true
       return false
     end
   end
