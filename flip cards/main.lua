@@ -74,6 +74,7 @@ mod.flipCards = {
   [Card.CARD_REVERSE_WORLD]            = Card.CARD_WORLD,
 }
 
+mod.input = {}
 mod.playerCards = {}
 
 function mod:onGameStart()
@@ -95,7 +96,7 @@ function mod:onRender()
     local playerHash = GetPtrHash(player)
     local _, card = mod:playerGetFlipAndCard(player, 0)
     
-    if Input.IsActionTriggered(ButtonAction.ACTION_DROP, player.ControllerIndex) and
+    if mod.input.isActionTriggered(ButtonAction.ACTION_DROP, player.ControllerIndex) and
        mod:playerHasRequirements(player) and
        (Input.IsActionPressed(ButtonAction.ACTION_MAP, player.ControllerIndex) or (mod:playerCountPocketItems(player) == 1 and not mod:playerIsTheForgotten(player))) and
        card == mod.playerCards[playerHash] -- don't flip immediately when switching slots
@@ -107,19 +108,42 @@ function mod:onRender()
   end
 end
 
+-- block game input
 function mod:onInputAction(entity, inputHook, buttonAction)
-  if entity and entity.Type == EntityType.ENTITY_PLAYER then
+  if entity and entity.Type == EntityType.ENTITY_PLAYER and inputHook == InputHook.IS_ACTION_TRIGGERED then
     local player = entity:ToPlayer()
     
-    if buttonAction == ButtonAction.ACTION_DROP and
-       inputHook == InputHook.IS_ACTION_TRIGGERED and
-       mod:playerHasRequirements(player) and
-       mod:playerGetFlipAndCard(player, 0) and
-       Input.IsActionPressed(ButtonAction.ACTION_MAP, player.ControllerIndex)
-    then
+    if mod:shouldBlockDropInput(buttonAction, player.ControllerIndex) then
       return false
     end
   end
+end
+
+-- block mod input
+function mod:overrideInput()
+  mod.input.isActionTriggered = Input.IsActionTriggered
+  
+  Input.IsActionTriggered = function(action, controllerId)
+    if mod:shouldBlockDropInput(action, controllerId) then
+      return false
+    end
+    
+    return mod.input.isActionTriggered(action, controllerId)
+  end
+end
+
+function mod:shouldBlockDropInput(buttonAction, controllerIdx)
+  if buttonAction == ButtonAction.ACTION_DROP and Input.IsActionPressed(ButtonAction.ACTION_MAP, controllerIdx) then
+    for i = 0, game:GetNumPlayers() - 1 do
+      local player = game:GetPlayer(i)
+      
+      if player.ControllerIndex == controllerIdx and mod:playerHasRequirements(player) and mod:playerGetFlipAndCard(player, 0) then
+        return true
+      end
+    end
+  end
+  
+  return false
 end
 
 function mod:playerFlipCard(player)
@@ -265,6 +289,7 @@ function mod:clearPlayerCards()
   end
 end
 
+mod:overrideInput()
 mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, mod.onGameStart)
 mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, mod.onGameExit)
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, mod.onRender)
