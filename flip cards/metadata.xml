@@ -160,6 +160,8 @@ Tap the drop button to flip cards. If you have more than one pocket item, you'll
 
 If you're playing as The Forgotton then you'll always need to use the map + drop keys.
 
+By default, you can flip any supported cards regardless of unlock status. If you don't like that then you can change the setting with Mod Config Menu.
+
 I added support for:
 [list]
     [*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=2848704602]Reverse Wheel of Fortune Rework[/url]
@@ -167,7 +169,7 @@ I added support for:
 [/list]
 
 Shout out to [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2023409823]Reversed Tarot Mod[/url] which did something similar for AB+.</description>
-    <version>1.6</version>
+    <version>1.7</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Cards"/>

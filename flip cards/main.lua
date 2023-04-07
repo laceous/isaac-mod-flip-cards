@@ -1,4 +1,5 @@
 local mod = RegisterMod('Flip Cards', 1)
+local json = require('json')
 local game = Game()
 
 mod.playerTypes = {
@@ -75,15 +76,34 @@ mod.flipCards = {
 }
 
 mod.input = {}
+mod.lookupCards = {}
 mod.playerCards = {}
 
+mod.state = {}
+mod.state.flipLockedCards = true
+
 function mod:onGameStart()
+  if mod:HasData() then
+    local _, state = pcall(json.decode, mod:LoadData())
+    
+    if type(state) == 'table' then
+      if type(state.flipLockedCards) == 'boolean' then
+        mod.state.flipLockedCards = state.flipLockedCards
+      end
+    end
+  end
+  
   mod:addModdedCards()
   mod:updateEid()
 end
 
 function mod:onGameExit()
+  mod:save()
   mod:clearPlayerCards()
+end
+
+function mod:save()
+  mod:SaveData(json.encode(mod.state))
 end
 
 function mod:onRender()
@@ -94,14 +114,15 @@ function mod:onRender()
   for i = 0, game:GetNumPlayers() - 1 do
     local player = game:GetPlayer(i)
     local playerHash = GetPtrHash(player)
-    local _, card = mod:playerGetFlipAndCard(player, 0)
+    local slot = 0
+    local card, flip = mod:playerGetCardAndFlip(player, slot)
     
     if mod.input.isActionTriggered(ButtonAction.ACTION_DROP, player.ControllerIndex) and
        mod:playerHasRequirements(player) and
        (Input.IsActionPressed(ButtonAction.ACTION_MAP, player.ControllerIndex) or (mod:playerCountPocketItems(player) == 1 and not mod:playerIsTheForgotten(player))) and
-       card == mod.playerCards[playerHash] -- don't flip immediately when switching slots
+       flip and card == mod.playerCards[playerHash] -- don't flip immediately when switching slots
     then
-      mod:playerFlipCard(player)
+      mod:playerSetCard(player, flip, slot)
     end
     
     mod.playerCards[playerHash] = card
@@ -136,8 +157,11 @@ function mod:shouldBlockDropInput(buttonAction, controllerIdx)
   if buttonAction == ButtonAction.ACTION_DROP and Input.IsActionPressed(ButtonAction.ACTION_MAP, controllerIdx) then
     for i = 0, game:GetNumPlayers() - 1 do
       local player = game:GetPlayer(i)
+      local playerHash = GetPtrHash(player)
+      local slot = 0
+      local card, flip = mod:playerGetCardAndFlip(player, slot)
       
-      if player.ControllerIndex == controllerIdx and mod:playerHasRequirements(player) and mod:playerGetFlipAndCard(player, 0) then
+      if player.ControllerIndex == controllerIdx and mod:playerHasRequirements(player) and flip and card == mod.playerCards[playerHash] then
         return true
       end
     end
@@ -146,26 +170,44 @@ function mod:shouldBlockDropInput(buttonAction, controllerIdx)
   return false
 end
 
-function mod:playerFlipCard(player)
-  local slot = 0
-  local flip, card = mod:playerGetFlipAndCard(player, slot)
-  
-  if card > Card.CARD_NULL and flip then
-    if type(flip) == 'table' then
-      -- this lets you flip until you get which "pip" you want
-      local rng = player:GetCardRNG(card)
-      flip = flip[rng:RandomInt(#flip) + 1]
-    end
-    
-    player:SetCard(slot, flip)
-    --SFXManager():Play(SoundEffect.SOUND_BOOK_PAGE_TURN_12, Options.SFXVolume, 2, false, 1, 0)
+function mod:playerSetCard(player, card, slot)
+  if type(card) == 'table' then
+    -- this lets you flip until you get which "pip" you want
+    local rng = player:GetCardRNG(mod:getLookupCard(card))
+    card = card[rng:RandomInt(#card) + 1]
   end
+  
+  player:SetCard(slot, card)
+  --SFXManager():Play(SoundEffect.SOUND_BOOK_PAGE_TURN_12, Options.SFXVolume, 2, false, 1, 0)
 end
 
--- flip first lets us use this in "if" statements
-function mod:playerGetFlipAndCard(player, slot)
+function mod:playerGetCardAndFlip(player, slot)
   local card = player:GetCard(slot)
-  return mod.flipCards[card], card
+  local flip = mod.flipCards[card]
+  
+  if flip and not mod.state.flipLockedCards then
+    local itemConfig = Isaac.GetItemConfig()
+    local cardConfig = itemConfig:GetCard(mod:getLookupCard(card))
+    local flipConfig = itemConfig:GetCard(mod:getLookupCard(flip))
+    
+    -- check both so we can flip back and forth
+    if not (cardConfig and cardConfig:IsAvailable()) or
+       not (flipConfig and flipConfig:IsAvailable())
+    then
+      flip = nil
+    end
+  end
+  
+  return card, flip
+end
+
+function mod:getLookupCard(card)
+  local temp = mod.lookupCards[card]
+  if temp then
+    return temp
+  end
+  
+  return card
 end
 
 function mod:playerHasRequirements(player)
@@ -230,7 +272,9 @@ function mod:addModdedCards()
   local fivePip = Isaac.GetCardIdByName('Five Pip')
   local sixPip = Isaac.GetCardIdByName('Six Pip')
   
-  if onePip > -1 and twoPip > -1 and threePip > -1 and fourPip > -1 and fivePip > -1 and sixPip > -1 then
+  if onePip > -1 and twoPip > -1 and threePip > -1 and fourPip > -1 and fivePip > -1 and sixPip > -1 and
+     not mod.flipCards[onePip] and not mod.flipCards[twoPip] and not mod.flipCards[threePip] and not mod.flipCards[fourPip] and not mod.flipCards[fivePip] and not mod.flipCards[sixPip]
+  then
     mod.flipCards[Card.CARD_WHEEL_OF_FORTUNE] = { onePip, twoPip, threePip, fourPip, fivePip, sixPip }
     mod.flipCards[onePip] = Card.CARD_WHEEL_OF_FORTUNE
     mod.flipCards[twoPip] = Card.CARD_WHEEL_OF_FORTUNE
@@ -238,13 +282,23 @@ function mod:addModdedCards()
     mod.flipCards[fourPip] = Card.CARD_WHEEL_OF_FORTUNE
     mod.flipCards[fivePip] = Card.CARD_WHEEL_OF_FORTUNE
     mod.flipCards[sixPip] = Card.CARD_WHEEL_OF_FORTUNE
+    
+    mod.lookupCards[mod.flipCards[Card.CARD_WHEEL_OF_FORTUNE]] = Card.CARD_REVERSE_WHEEL_OF_FORTUNE
+    mod.lookupCards[onePip] = Card.CARD_REVERSE_WHEEL_OF_FORTUNE
+    mod.lookupCards[twoPip] = Card.CARD_REVERSE_WHEEL_OF_FORTUNE
+    mod.lookupCards[threePip] = Card.CARD_REVERSE_WHEEL_OF_FORTUNE
+    mod.lookupCards[fourPip] = Card.CARD_REVERSE_WHEEL_OF_FORTUNE
+    mod.lookupCards[fivePip] = Card.CARD_REVERSE_WHEEL_OF_FORTUNE
+    mod.lookupCards[sixPip] = Card.CARD_REVERSE_WHEEL_OF_FORTUNE
   end
   
   -- eye of night cards mod
   local eyeOfNight = Isaac.GetCardIdByName('Eye of Night card')
   local revEyeOfNight = Isaac.GetCardIdByName('Reverse Eye of Night')
   
-  if eyeOfNight > -1 and revEyeOfNight > -1 then
+  if eyeOfNight > -1 and revEyeOfNight > -1 and
+     not mod.flipCards[eyeOfNight] and not mod.flipCards[revEyeOfNight]
+  then
     mod.flipCards[eyeOfNight] = revEyeOfNight
     mod.flipCards[revEyeOfNight] = eyeOfNight
   end
@@ -289,8 +343,84 @@ function mod:clearPlayerCards()
   end
 end
 
+-- start ModConfigMenu --
+function mod:setupModConfigMenu()
+  for _, v in ipairs({ 'Settings', 'Cards' }) do
+    ModConfigMenu.RemoveSubcategory(mod.Name, v)
+  end
+  ModConfigMenu.AddSetting(
+    mod.Name,
+    'Settings',
+    {
+      Type = ModConfigMenu.OptionType.BOOLEAN,
+      CurrentSetting = function()
+        return mod.state.flipLockedCards
+      end,
+      Display = function()
+        return (mod.state.flipLockedCards and 'Flip' or 'Do not flip') .. ' locked cards'
+      end,
+      OnChange = function(b)
+        mod.state.flipLockedCards = b
+        mod:save()
+      end,
+      Info = { 'Do you want to flip cards that', 'haven\'t been unlocked yet?' }
+    }
+  )
+  for _, v in ipairs({
+                       { card = Card.CARD_FOOL            , flip = Card.CARD_REVERSE_FOOL            , name = '0 - The Fool'           , info = { 'Defeat ultra greedier as tainted lost' } },
+                       { card = Card.CARD_MAGICIAN        , flip = Card.CARD_REVERSE_MAGICIAN        , name = 'I - The Magician'       , info = { 'Defeat ultra greedier as tainted judas' } },
+                       { card = Card.CARD_HIGH_PRIESTESS  , flip = Card.CARD_REVERSE_HIGH_PRIESTESS  , name = 'II - The High Priestess', info = { 'Defeat ultra greedier as tainted lilith' } },
+                       { card = Card.CARD_EMPRESS         , flip = Card.CARD_REVERSE_EMPRESS         , name = 'III - The Empress'      , info = { 'Defeat ultra greedier as tainted eve' } },
+                       { card = Card.CARD_EMPEROR         , flip = Card.CARD_REVERSE_EMPEROR         , name = 'IV - The Emperor'       , info = { 'Defeat ultra greedier as tainted ???' } },
+                       { card = Card.CARD_HIEROPHANT      , flip = Card.CARD_REVERSE_HIEROPHANT      , name = 'V - The Hierophant'     , info = { 'Defeat ultra greedier as tainted bethany' } },
+                       { card = Card.CARD_LOVERS          , flip = Card.CARD_REVERSE_LOVERS          , name = 'VI - The Lovers'        , info = { 'Defeat ultra greedier as tainted magdalene' } },
+                       { card = Card.CARD_CHARIOT         , flip = Card.CARD_REVERSE_CHARIOT         , name = 'VII - The Chariot'      , info = { 'Complete hot potato (challenge #42)' } },
+                       { card = Card.CARD_JUSTICE         , flip = Card.CARD_REVERSE_JUSTICE         , name = 'VIII - Justice'         , info = { 'Complete cantripped (challenge #43)' } },
+                       { card = Card.CARD_HERMIT          , flip = Card.CARD_REVERSE_HERMIT          , name = 'IX - The Hermit'        , info = { 'Complete red redemption (challenge #44)' } },
+                       { card = Card.CARD_WHEEL_OF_FORTUNE, flip = Card.CARD_REVERSE_WHEEL_OF_FORTUNE, name = 'X - Wheel of Fortune'   , info = { 'Defeat ultra greedier as tainted cain' } },
+                       { card = Card.CARD_STRENGTH        , flip = Card.CARD_REVERSE_STRENGTH        , name = 'XI - Strength'          , info = { 'Defeat ultra greedier as tainted samson' } },
+                       { card = Card.CARD_HANGED_MAN      , flip = Card.CARD_REVERSE_HANGED_MAN      , name = 'XII - The Hanged Man'   , info = { 'Defeat ultra greedier as tainted keeper' } },
+                       { card = Card.CARD_DEATH           , flip = Card.CARD_REVERSE_DEATH           , name = 'XIII - Death'           , info = { 'Defeat ultra greedier as tainted forgotten' } },
+                       { card = Card.CARD_TEMPERANCE      , flip = Card.CARD_REVERSE_TEMPERANCE      , name = 'XIV - Temperance'       , info = { 'Complete delete this (challenge #45)' } },
+                       { card = Card.CARD_DEVIL           , flip = Card.CARD_REVERSE_DEVIL           , name = 'XV - The Devil'         , info = { 'Defeat ultra greedier as tainted azazel' } },
+                       { card = Card.CARD_TOWER           , flip = Card.CARD_REVERSE_TOWER           , name = 'XVI - The Tower'        , info = { 'Defeat ultra greedier as tainted apollyon' } },
+                       { card = Card.CARD_STARS           , flip = Card.CARD_REVERSE_STARS           , name = 'XVII - The Stars'       , info = { 'Defeat ultra greedier as tainted isaac' } },
+                       { card = Card.CARD_MOON            , flip = Card.CARD_REVERSE_MOON            , name = 'XVIII - The Moon'       , info = { 'Defeat ultra greedier as tainted jacob' } },
+                       { card = Card.CARD_SUN             , flip = Card.CARD_REVERSE_SUN             , name = 'XIX - The Sun'          , info = { 'Defeat ultra greedier as tainted jacob' } },
+                       { card = Card.CARD_JUDGEMENT       , flip = Card.CARD_REVERSE_JUDGEMENT       , name = 'XX - Judgement'         , info = { 'Defeat ultra greedier as tainted lazarus' } },
+                       { card = Card.CARD_WORLD           , flip = Card.CARD_REVERSE_WORLD           , name = 'XXI - The World'        , info = { 'Defeat ultra greedier as tainted eden' } },
+                    })
+  do
+    ModConfigMenu.AddSetting(
+      mod.Name,
+      'Cards',
+      {
+        Type = ModConfigMenu.OptionType.BOOLEAN,
+        CurrentSetting = function()
+          return false
+        end,
+        Display = function()
+          local itemConfig = Isaac.GetItemConfig()
+          local cardConfig = itemConfig:GetCard(v.card)
+          local flipConfig = itemConfig:GetCard(v.flip)
+          return v.name .. ' : ' .. ((cardConfig and flipConfig and cardConfig:IsAvailable() and flipConfig:IsAvailable()) and 'unlocked' or 'locked')
+        end,
+        OnChange = function(b)
+          -- nothing to do
+        end,
+        Info = v.info
+      }
+    )
+  end
+end
+-- end ModConfigMenu --
+
 mod:overrideInput()
 mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, mod.onGameStart)
 mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, mod.onGameExit)
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, mod.onRender)
 mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, mod.onInputAction)
+
+if ModConfigMenu then
+  mod:setupModConfigMenu()
+end
