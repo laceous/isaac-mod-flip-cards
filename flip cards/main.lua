@@ -93,6 +93,7 @@ function mod:onGameStart()
     end
   end
   
+  mod:setupModConfigMenu()
   mod:addModdedCards()
   mod:updateEid()
 end
@@ -345,6 +346,10 @@ end
 
 -- start ModConfigMenu --
 function mod:setupModConfigMenu()
+  if not ModConfigMenu then
+    return
+  end
+  
   for _, v in ipairs({ 'Settings', 'Cards' }) do
     ModConfigMenu.RemoveSubcategory(mod.Name, v)
   end
@@ -389,6 +394,7 @@ function mod:setupModConfigMenu()
                        { card = Card.CARD_SUN             , flip = Card.CARD_REVERSE_SUN             , name = 'XIX - The Sun'          , info = { 'Defeat ultra greedier as tainted jacob' } },
                        { card = Card.CARD_JUDGEMENT       , flip = Card.CARD_REVERSE_JUDGEMENT       , name = 'XX - Judgement'         , info = { 'Defeat ultra greedier as tainted lazarus' } },
                        { card = Card.CARD_WORLD           , flip = Card.CARD_REVERSE_WORLD           , name = 'XXI - The World'        , info = { 'Defeat ultra greedier as tainted eden' } },
+                       { card = Isaac.GetCardIdByName('Eye of Night card'), flip = Isaac.GetCardIdByName('Reverse Eye of Night'), name = 'XXII - The Eye of Night', info = { 'Install the eye of night cards mod' } },
                     })
   do
     ModConfigMenu.AddSetting(
@@ -403,7 +409,19 @@ function mod:setupModConfigMenu()
           local itemConfig = Isaac.GetItemConfig()
           local cardConfig = itemConfig:GetCard(v.card)
           local flipConfig = itemConfig:GetCard(v.flip)
-          return v.name .. ' : ' .. ((cardConfig and flipConfig and cardConfig:IsAvailable() and flipConfig:IsAvailable()) and 'unlocked' or 'locked')
+          
+          local status
+          if cardConfig and flipConfig then
+            if cardConfig:IsAvailable() and flipConfig:IsAvailable() then
+              status = 'unlocked'
+            else
+              status = 'locked'
+            end
+          else
+            status = 'missing'
+          end
+          
+          return v.name .. ' : ' .. status
         end,
         OnChange = function(b)
           -- nothing to do
@@ -421,6 +439,4 @@ mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, mod.onGameExit)
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, mod.onRender)
 mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, mod.onInputAction)
 
-if ModConfigMenu then
-  mod:setupModConfigMenu()
-end
+mod:setupModConfigMenu()
