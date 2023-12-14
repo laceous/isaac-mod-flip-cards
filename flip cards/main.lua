@@ -95,7 +95,6 @@ function mod:onGameStart()
   
   mod:setupModConfigMenu()
   mod:addModdedCards()
-  mod:updateEid()
 end
 
 function mod:onGameExit()
@@ -305,43 +304,38 @@ function mod:addModdedCards()
   end
 end
 
-function mod:updateEid()
-  if EID then
-    -- english only for now
-    local descriptionAddition = '#{{Card}} Flip tarot cards'
-    
-    for _, item in ipairs(mod.cardItems) do
-      mod:updateEidInternal(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, item, function(name, description, lang)
-        EID:addCollectible(item, description .. descriptionAddition, name, lang)
-      end)
-    end
-    for _, trinket in ipairs(mod.cardTrinkets) do
-      mod:updateEidInternal(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TRINKET, trinket, function(name, description, lang)
-        EID:addTrinket(trinket, description .. descriptionAddition, name, lang)
-      end)
-    end
-  end
-end
-
-function mod:updateEidInternal(entityType, variant, subType, func)
-  local tblName = EID:getTableName(entityType, variant, subType)
-  
-  for lang, v in pairs(EID.descriptions) do
-    local tbl = v[tblName]
-    
-    if tbl and tbl[subType] then
-      local name = tbl[subType][2]
-      local description = tbl[subType][3]
-      
-      func(name, description, lang)
-    end
-  end
-end
-
 function mod:clearPlayerCards()
   for k, _ in pairs(mod.playerCards) do
     mod.playerCards[k] = nil
   end
+end
+
+function mod:tblHasVal(tbl, val)
+  for _, v in ipairs(tbl) do
+    if v == val then
+      return true
+    end
+  end
+  
+  return false
+end
+
+function mod:setupEid()
+  if not EID then
+    return
+  end
+  
+  EID:addDescriptionModifier(mod.Name, function(descObj)
+    return descObj.ObjType == EntityType.ENTITY_PICKUP and
+           (
+             (descObj.ObjVariant == PickupVariant.PICKUP_COLLECTIBLE and mod:tblHasVal(mod.cardItems, descObj.ObjSubType)) or
+             (descObj.ObjVariant == PickupVariant.PICKUP_TRINKET and mod:tblHasVal(mod.cardTrinkets, descObj.ObjSubType))
+           )
+  end, function(descObj)
+    -- english only for now
+    EID:appendToDescription(descObj, '#{{Card}} Flip tarot cards')
+    return descObj
+  end)
 end
 
 -- start ModConfigMenu --
@@ -439,4 +433,5 @@ mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, mod.onGameExit)
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, mod.onRender)
 mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, mod.onInputAction)
 
+mod:setupEid()
 mod:setupModConfigMenu()

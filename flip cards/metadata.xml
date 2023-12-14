@@ -175,7 +175,7 @@ I added support for:
 [/list]
 
 Shout out to [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2023409823]Reversed Tarot Mod[/url] which did something similar for AB+.</description>
-    <version>1.9</version>
+    <version>1.10</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Cards"/>
