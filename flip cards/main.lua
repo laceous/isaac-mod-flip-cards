@@ -333,7 +333,7 @@ function mod:setupEid()
            )
   end, function(descObj)
     -- english only for now
-    EID:appendToDescription(descObj, '#{{Card}} Flip tarot cards')
+    EID:appendToDescription(descObj, '#{{Card}} Flip tarot cards ({{ButtonRT}} or {{ButtonSelect}} + {{ButtonRT}})')
     return descObj
   end)
 end
